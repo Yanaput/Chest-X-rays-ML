@@ -25,7 +25,7 @@ def combine_all_img():
 
 
 def main():
-    # combine_all_img()
+    combine_all_img()
     df = pd.read_csv(ENRTY_CSV)
     df = df.iloc[:,:-1]
     df["labels"] = df["Finding Labels"].fillna("").str.split("|")
