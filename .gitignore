@@ -1,0 +1,16 @@
+.vscode/
+.idea/
+*.iml
+.venv/
+
+*.pyc
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+
+dist/
+build/
+*.whl
+
+data/
