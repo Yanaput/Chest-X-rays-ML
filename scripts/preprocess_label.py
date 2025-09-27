@@ -27,8 +27,15 @@ def combine_all_img():
 def main():
     combine_all_img()
     df = pd.read_csv(ENRTY_CSV)
-    df = df.iloc[:,:-1]
+    df = df.iloc[:, :-1]
     df["labels"] = df["Finding Labels"].fillna("").str.split("|")
+    # try:
+    #     with open(RAW / "train_val_list.txt", "r") as f:
+    #         enties = f.readlines()
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")   
+
+    # train_val = [line.strip() for line in enties]
 
     rows = []
     for _, row in df.iterrows():
@@ -36,14 +43,15 @@ def main():
         for t in row["labels"]:
             if t == "No Finding" or t == "": continue
             if t in y: y[t] = 1
-        print(f"{str((ALL_IMG_DIR / row["Image Index"]))}")
         rows.append({
             "image_path": str((ALL_IMG_DIR / row["Image Index"])),
+            "image_idx": row["Image Index"],
             "patient_id": row["Patient ID"],
-            "ori_img_w": row["OriginalImage[Width"],
-            "ori_img_h": row["Height]"],
-            "ori_img_spacing_x": row["OriginalImagePixelSpacing[x"],
-            "ori_img_spacing_y": row["y]"],
+            # "split": "train_val" if row["Image Index"] in train_val else "test"
+            # "ori_img_w": row["OriginalImage[Width"],
+            # "ori_img_h": row["Height]"],
+            # "ori_img_spacing_x": row["OriginalImagePixelSpacing[x"],
+            # "ori_img_spacing_y": row["y]"],
             **y
         })
     out = pd.DataFrame(rows)
