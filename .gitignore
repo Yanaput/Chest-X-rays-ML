@@ -13,4 +13,11 @@ dist/
 build/
 *.whl
 
-data/
+*.ipynb
+*.csv
+*.png
+
+data/raw/
+data/processed/
+
+logs/
