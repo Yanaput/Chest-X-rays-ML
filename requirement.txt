@@ -13,3 +13,5 @@ hydra-core
 lightning
 rich
 opencv-python
+albumentations
+iterative-stratification
