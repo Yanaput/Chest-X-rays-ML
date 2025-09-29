@@ -33,7 +33,6 @@ class LitChestXray(pl.LightningModule):
         ):
         super().__init__()
         self.total_epochs=total_epochs
-        self.save_hyperparameters(ignore=["pos_weight"])
         
         if thresholds_path is None:
             path = ROOT / "configs" /"thresholds.json"
@@ -47,6 +46,8 @@ class LitChestXray(pl.LightningModule):
         else:
             self.thresholds_path = thresholds_path
 
+        self.save_hyperparameters(ignore=["pos_weight"])
+        
         self._val_probs, self._val_targs = [], []
         self.model = CNN(
             num_classes=num_classes, 
