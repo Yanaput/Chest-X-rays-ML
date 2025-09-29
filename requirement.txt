@@ -9,9 +9,8 @@ scikit-learn>=1.7.2
 tqdm>=4.67.1
 matplotlib
 seaborn
-hydra-core
 lightning
-rich
 opencv-python
 albumentations
 iterative-stratification
+tensorflow
