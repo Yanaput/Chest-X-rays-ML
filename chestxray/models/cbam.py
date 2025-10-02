@@ -5,10 +5,10 @@ import torch.nn.functional as F
 class ChannelAttention(nn.Module):
     def __init__(self, channels, reduction=16):
         super().__init__()
-        hidden = max(channels // reduction, 4)
+        hidden = max(channels // reduction, 1)
         self.mlp = nn.Sequential(
             nn.Linear(channels, hidden, bias=False),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.Linear(hidden, channels, bias=False)
         )
 
