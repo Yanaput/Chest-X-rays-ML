@@ -9,16 +9,19 @@ from .dataset import ChestXray14Dataset
 
 
 def build_transforms(img_size: int, mean: float = 0.5, std: float = 0.25) -> Tuple[A.Compose, A.Compose]:
-    """
-    For resized images that are already square and same size, you can drop LongestMaxSize/PadIfNeeded.
-    If your cache is not uniform, keep them to stabilize geometry.
-    """
     train_tf = A.Compose([
-        A.LongestMaxSize(max_size=img_size),
-        A.PadIfNeeded(img_size, img_size, border_mode=0),
+        # If images are already square & img_size, drop the next two:
+        # A.LongestMaxSize(max_size=img_size),
+        # A.PadIfNeeded(img_size, img_size, border_mode=0),
         A.HorizontalFlip(p=0.5),
-        A.ShiftScaleRotate(shift_limit=0.02, scale_limit=0.10, rotate_limit=10, p=0.7),
-        A.RandomBrightnessContrast(0.05, 0.05, p=0.3),
+        A.ShiftScaleRotate(shift_limit=0.025, scale_limit=0.10,
+                           rotate_limit=7, border_mode=0, p=0.7),
+        A.RandomGamma(gamma_limit=(90, 110), p=0.3),
+        A.RandomBrightnessContrast(brightness_limit=0.05,
+                                   contrast_limit=0.05, p=0.3),
+        A.GaussNoise(var_limit=(2.0, 5.0), p=0.15),
+        A.CoarseDropout(max_holes=2, max_height=int(0.08*img_size),
+                        max_width=int(0.08*img_size), fill_value=0, p=0.15),
         A.Normalize(mean=(mean,), std=(std,)),
         ToTensorV2(),
     ])
@@ -29,6 +32,7 @@ def build_transforms(img_size: int, mean: float = 0.5, std: float = 0.25) -> Tup
         ToTensorV2(),
     ])
     return train_tf, val_tf
+
 
 class ChestXray14DataModule(pl.LightningDataModule):
     """
