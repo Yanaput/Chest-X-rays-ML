@@ -3,7 +3,7 @@
 ### Implemented for classification
 - [ResNet](https://arxiv.org/abs/1512.03385)
 
-- [Group Generalized Mean (GeM) Pooling for Vision Transformer](https://arxiv.org/abs/2212.04114)
+- [Fine-tuning CNN Image Retrieval with No Human Annotation](https://arxiv.org/abs/1711.02512)
 
 - [CBAM: Convolutional Block Attention Module](https://arxiv.org/abs/1807.06521)
 
