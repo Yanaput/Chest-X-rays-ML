@@ -7,9 +7,9 @@ class GeMPooling(nn.Module):
         super().__init__()
         self.eps = eps
         if learn_p:
-            self.p = nn.Parameter(torch.tensor(float(p)))
+            self.p = nn.Parameter(torch.ones(1) * float(p))
         else:
-            self.register_buffer("p", torch.tensor(float(p)))
+            self.register_buffer("p", torch.ones(1) * float(p))
 
     def forward(self, x):
         p = torch.clamp(self.p, min=1e-3, max=6.0)

@@ -2,14 +2,14 @@ import torch
 import math
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from torchvision.ops import sigmoid_focal_loss
 from torchmetrics.classification import MultilabelAUROC, MultilabelAveragePrecision
 import numpy as np
-from .cnn import CNN
-from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay, classification_report
-import matplotlib.pyplot as plt
+from .cnn import CNN, ResidualBlock, BottleneckBlock
+from sklearn.metrics import multilabel_confusion_matrix, classification_report
 from ..utils.confusion_matrix import plot_multilabel_confusion_matrix
 from ..utils.tune_thresholds import tune_thresholds
-from .focal_loss import MultilabelFocalLoss
+from  typing import Optional, Union
 import json
 from pathlib import Path
 from sklearn.metrics import f1_score
@@ -24,10 +24,11 @@ class LitChestXray(pl.LightningModule):
     def __init__(
             self,
             in_chans=1, 
-            num_classes=14, 
+            num_classes=14,
+            block: ResidualBlock | BottleneckBlock = BottleneckBlock,
             lr=3e-4, 
             weight_decay=1e-4, 
-            pos_weight=None,
+            # pos_weight=None,
             total_epochs=100,
             thresholds_path: str | None = None
         ):
@@ -46,12 +47,13 @@ class LitChestXray(pl.LightningModule):
         else:
             self.thresholds_path = thresholds_path
 
-        self.save_hyperparameters(ignore=["pos_weight"])
+        self.save_hyperparameters()
         
         self._val_probs, self._val_targs = [], []
         self.model = CNN(
             num_classes=num_classes, 
-            in_chans=in_chans
+            in_chans=in_chans,
+            block=block
         )
         self.register_buffer(
             "thresholds", 
@@ -59,10 +61,10 @@ class LitChestXray(pl.LightningModule):
             persistent=True
         )
 
-        self.register_buffer("pos_weight", None)
-        if pos_weight is not None:
-            self.pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
-            self.loss_fn = MultilabelFocalLoss(self.pos_weight)
+        # self.register_buffer("pos_weight", None)
+        # if pos_weight is not None:
+        #     self.pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
+            # self.loss_fn = MultilabelFocalLoss(self.pos_weight)
         self.auroc = MultilabelAUROC(num_labels=num_classes, average="macro")
         self.ap    = MultilabelAveragePrecision(num_labels=num_classes, average="macro")
 
@@ -97,7 +99,13 @@ class LitChestXray(pl.LightningModule):
         #     target= y, 
         #     pos_weight=self.pos_weight
         # )
-        loss = self.loss_fn(logits, y)
+        loss = sigmoid_focal_loss(
+            inputs=logits,
+            targets= y, 
+            # pos_weight=self.pos_weight
+            reduction="mean"
+        )
+        # loss = self.loss_fn(logits, y)
         bs = x.size(0)
         self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True, batch_size=bs, logger=True)
         return loss
@@ -111,7 +119,13 @@ class LitChestXray(pl.LightningModule):
         #     target= y, 
         #     pos_weight=self.pos_weight
         # )
-        loss = self.loss_fn(logits, y)
+        loss = sigmoid_focal_loss(
+            inputs=logits,
+            targets= y, 
+            # pos_weight=self.pos_weight
+            reduction="mean"
+        )
+        # loss = self.loss_fn(logits, y)
         probs = logits.sigmoid()
         bs = x.size(0)
         self.auroc.update(probs, y.int()); self.ap.update(probs, y.int())
@@ -166,12 +180,18 @@ class LitChestXray(pl.LightningModule):
     def test_step(self, batch, _):
         x, y = batch["image"], batch["target"].float()
         logits = self.model(x)
+        loss = sigmoid_focal_loss(
+            inputs=logits,
+            targets= y, 
+            # pos_weight=self.pos_weight
+            reduction="mean"
+        )
         # loss = F.binary_cross_entropy_with_logits(
         #     input=logits,
         #     target= y, 
         #     pos_weight=self.pos_weight
         # )
-        loss = self.loss_fn(logits, y)
+        # loss = self.loss_fn(logits, y)
         probs = logits.sigmoid()
         self.test_auroc.update(probs, y.int())
         self.test_ap.update(probs, y.int())
