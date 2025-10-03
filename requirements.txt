@@ -1,14 +1,10 @@
---extra-index-url https://download.pytorch.org/whl/cu126
-torch==2.8.0
-torchvision==0.23.0
-
+torch>=2.0.0
+torchvision
 kagglehub>=0.3.13
 numpy>=2.1.2
 pandas>=2.3.2
 scikit-learn>=1.7.2
-tqdm>=4.67.1
 matplotlib
-seaborn
 lightning
 opencv-python
 albumentations
