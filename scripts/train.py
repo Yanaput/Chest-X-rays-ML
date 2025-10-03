@@ -31,10 +31,10 @@ def main():
 
     dm = ChestXray14DataModule(
         train_csv=train_csv, 
-        val_csv=val_csv, 
+        val_csv=val_csv,
         test_csv=test_csv,
         img_size=img_size, 
-        batch_size=32, 
+        batch_size=12, 
         num_workers=6,
         cached_dir=cached_dir,
         pin_memory=True, 
@@ -45,7 +45,7 @@ def main():
 
     logger = TensorBoardLogger(
         save_dir="logs",
-        name="resnet_cbam_AdamW"
+        name="resnet50_cbam_AdamW_100"
     )
 
     model = lit_module.LitChestXray(
@@ -53,16 +53,16 @@ def main():
         num_classes=len(LABELS), 
         lr=1e-4, 
         weight_decay=1e-4, 
-        pos_weight=pos,
-        total_epochs=100,
+        total_epochs=300,
+        # thresholds_path="../configs/thresholds.json"
     )
 
     ckpt_cb = ModelCheckpoint(
-        dirpath=ROOT / "logs" / "checkpoint",
+        dirpath=ROOT / "logs" / "checkpoint_resnet50_100",
         monitor="val_mAP", 
         mode="max", 
         save_top_k=1, 
-        filename="resnet_cbam_AdamW_{epoch:03d}-{val_mAP:.4f}",
+        filename="resnet50_cbam_AdamW_{epoch:03d}_100-{val_mAP:.4f}",
         save_weights_only=False
     )
     
@@ -75,12 +75,13 @@ def main():
         accelerator="gpu", 
         devices=1,
         log_every_n_steps=100,
-        callbacks=[ckpt_cb, es_cb, lr_cb],
+        callbacks=[ckpt_cb, lr_cb],
         gradient_clip_val=1.0,
         logger=logger
     )
 
     trainer.fit(model, datamodule=dm)
+
 
 if __name__ == "__main__":
     main()
