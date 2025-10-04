@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import cv2
 import os
+import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw" / "nih_kaggle"
@@ -31,6 +32,7 @@ def resize(img_path, img_name, size=512):
     
 
 def main():
+    print("preprocess_resize")
     try:
         with open(RAW / "train_val_list.txt", "r") as f:
             entries = f.readlines()
@@ -61,6 +63,15 @@ def main():
     csv_dir.mkdir(parents=True, exist_ok=True)
     train_val_df.to_csv(csv_dir / "train_val.csv", index=False)
     test_df.to_csv(csv_dir / "test.csv", index=False)
+
+    if input(f"Are you sure you want to delete raw data at {RAW}? (y/N) ").lower() == 'y':
+        try:
+            shutil.rmtree(RAW)
+            print(f"Directory '{RAW}' and its contents removed successfully.")
+        except OSError as e:
+            print(f"Error: {e.filename} - {e.strerror}")
+    else:
+        print("Deletion cancelled.")
 
 if __name__ == "__main__":
     main()

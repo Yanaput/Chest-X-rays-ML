@@ -58,6 +58,8 @@ def compute_pos_weight(train_df: pd.DataFrame):
 
 
 def main():
+    print("preprocess_split")
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--train_val_csv", default=TRAIN_VAL_CSV)
     ap.add_argument("--out_dir", default=PROC)

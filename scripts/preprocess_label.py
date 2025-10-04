@@ -25,6 +25,7 @@ def combine_all_img():
 
 
 def main():
+    print("preprocess_label")
     combine_all_img()
     df = pd.read_csv(ENRTY_CSV)
     df = df.iloc[:, :-1]

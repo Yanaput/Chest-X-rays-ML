@@ -57,7 +57,7 @@ def main(args):
         lr=1e-4, 
         weight_decay=1e-4, 
         total_epochs=args.total_epochs,
-        thresholds_path=args.thresholds_path if args.thresholds_path is not None else "../configs/thresholds.json"
+        thresholds_path=args.thresholds_path
     )
 
     ckpt_cb = ModelCheckpoint(
@@ -69,7 +69,7 @@ def main(args):
         save_weights_only=False
     )
     
-    es_cb = EarlyStopping(monitor="val_AUROC", mode="max", patience=10, verbose=True)
+    es_cb = EarlyStopping(monitor="val_mAP", mode="max", patience=10, verbose=True)
     lr_cb = LearningRateMonitor(logging_interval="epoch")
 
     trainer = pl.Trainer(

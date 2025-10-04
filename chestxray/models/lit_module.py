@@ -126,12 +126,14 @@ class LitChestXray(pl.LightningModule):
         self._val_probs.clear(); self._val_targs.clear()
 
         ths = tune_thresholds(probs, targs)            # np.array [C]
+        print(f"new ths : {ths}")
         # store in a buffer for later (moves with device; saved in checkpoint)
         self.thresholds = torch.tensor(ths, dtype=torch.float32, device=self.device)
 
         if self.thresholds_path:
             Path(self.thresholds_path).parent.mkdir(parents=True, exist_ok=True)
             Path(self.thresholds_path).write_text(json.dumps({"thresholds": ths.tolist()}, indent=2))
+            print(f"thresholds saved on {self.thresholds_path}")
 
         yhat = (probs >= ths).astype(int)
         macro_f1 = f1_score(targs, yhat, average="macro", zero_division=0)
