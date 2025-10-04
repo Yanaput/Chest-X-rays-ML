@@ -1,35 +1,92 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from math import ceil
+import textwrap
 
-def plot_multilabel_confusion_matrix(cm, class_names):
-    num_classes = cm.shape[0]
-    ncols = 3  # Set the number of columns for the plot
-    nrows = (num_classes + ncols - 1) // ncols  # Calculate the number of rows needed
+def plot_multilabel_confusion_matrix(
+    cm: np.ndarray,
+    class_names=None,
+    ncols: int = 3,
+    normalize: bool = False,
+    cmap = plt.cm.Blues,
+    suptitle: str | None = None,
+    wrap_width: int = 14,
+):
+    assert cm.ndim == 3 and cm.shape[1:] == (2, 2), "cm must be (C, 2, 2)"
+    C = cm.shape[0]
+    if class_names is None:
+        class_names = [f"class_{i}" for i in range(C)]
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 4, nrows * 4))
-    axes = axes.flatten()  # Flatten the 2D array of axes for easy iteration
+    data = cm.astype(float).copy()
+    if normalize:
+        rowsums = data.sum(axis=2, keepdims=False)
+        rowsums[rowsums == 0] = 1.0
+        for i in range(C):
+            data[i, 0, :] /= rowsums[i, 0]
+            data[i, 1, :] /= rowsums[i, 1]
 
-    for i in range(num_classes):
+    nrows = ceil(C / ncols)
+
+    fig, axes = plt.subplots(
+        nrows=nrows, ncols=ncols,
+        figsize=(ncols * 4.6, nrows * 4.6),
+        constrained_layout=True
+    )
+    if not isinstance(axes, np.ndarray):
+        axes = np.array([axes])
+    axes = axes.flatten()
+
+    vmin = 0.0
+    vmax = 1.0 if normalize else float(cm.max() if cm.size else 1.0)
+
+    for i in range(C):
         ax = axes[i]
-        ax.matshow(cm[i], cmap=plt.cm.Blues, alpha=0.5)
-        ax.set_xlabel('Predicted')
-        ax.set_ylabel('True')
-        ax.set_title(class_names[i])
+        ax.imshow(data[i], cmap=cmap, vmin=vmin, vmax=vmax)
 
-        # Set x and y axis ticks to show "Positive" first and "Negative" second
         ax.set_xticks([0, 1])
-        ax.set_xticklabels(['Positive', 'Negative'])  # Positive first
+        ax.set_xticklabels(["Negative", "Positive"], fontsize=9)
         ax.set_yticks([0, 1])
-        ax.set_yticklabels(['Positive', 'Negative'])  # Positive first
+        ax.set_yticklabels(["Negative", "Positive"], fontsize=9)
 
-        # Show the counts
-        for j in range(cm[i].shape[0]):
-            for k in range(cm[i].shape[1]):
-                ax.text(k, j, cm[i][j, k], ha='center', va='center')
+        title_txt = textwrap.fill(class_names[i].replace("_", " "), width=wrap_width)
+        ax.set_title(
+            title_txt,
+            pad=12,
+            fontsize=11,
+            bbox=dict(facecolor="white", alpha=0.9, edgecolor="none", boxstyle="round,pad=0.2")
+        )
 
-    # Hide any unused subplots
-    for i in range(num_classes, len(axes)):
-        axes[i].axis('off')
+        annot = cm[i] if not normalize else data[i]
+        thresh = (vmax - vmin) / 2.0
+        for r in range(2):
+            for c in range(2):
+                val = annot[r, c]
+                txt = f"{int(val)}" if not normalize else f"{val:.2f}"
+                ax.text(
+                    c, r, txt,
+                    ha="center", va="center",
+                    color="white" if data[i, r, c] > thresh else "black",
+                    fontsize=11
+                )
 
-    plt.tight_layout()
+        ax.set_xticks(np.arange(-.5, 2, 1), minor=True)
+        ax.set_yticks(np.arange(-.5, 2, 1), minor=True)
+        ax.grid(which="minor", linestyle="-", linewidth=0.5, alpha=0.4)
+        ax.tick_params(axis='both', which='both', length=0)
+
+    for j in range(C, len(axes)):
+        axes[j].axis("off")
+
+    fig.supxlabel("Predicted", fontsize=12)
+    fig.supylabel("True", fontsize=12)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=axes[:C], fraction=0.02, pad=0.02)
+    cbar.set_label("Proportion" if normalize else "Count")
+
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=14)
+
     plt.show()
+    return fig, axes
