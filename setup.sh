@@ -2,12 +2,7 @@
 
 pip install -r requirements.txt
 pip install -e .
-
-# Create necessary directories
-mkdir -p data/raw/nih_kaggle
-mkdir -p data/processed/resized
-mkdir -p logs/checkpoint
-mkdir -p configs
+apt-get update && apt-get install tmux
 
 # Set permissions
 chmod +x scripts/*.py
