@@ -9,7 +9,7 @@ from .cnn import CNN, ResidualBlock, BottleneckBlock
 from sklearn.metrics import multilabel_confusion_matrix, classification_report
 from ..utils.confusion_matrix import plot_multilabel_confusion_matrix
 from ..utils.tune_thresholds import tune_thresholds
-from  typing import Optional, Union
+from  typing import Literal
 import json
 from pathlib import Path
 from sklearn.metrics import f1_score
@@ -27,12 +27,14 @@ class LitChestXray(pl.LightningModule):
             num_classes=14,
             block: ResidualBlock | BottleneckBlock = BottleneckBlock,
             lr=3e-4, 
-            weight_decay=1e-4, 
-            # pos_weight=None,
+            weight_decay=1e-4,
+            loss_func: Literal["sigmoid_focal_loss", "binary_cross_entropy_with_logits"] = "binary_cross_entropy_with_logits", 
+            pos_weight=None,
             total_epochs=100,
             thresholds_path: str | None = None
         ):
         super().__init__()
+
         self.total_epochs=total_epochs
         
         if thresholds_path is None:
@@ -61,10 +63,10 @@ class LitChestXray(pl.LightningModule):
             persistent=True
         )
 
-        # self.register_buffer("pos_weight", None)
-        # if pos_weight is not None:
-        #     self.pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
-            # self.loss_fn = MultilabelFocalLoss(self.pos_weight)
+        self.register_buffer("pos_weight", None)
+        if pos_weight is not None:
+            self.pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
+            
         self.auroc = MultilabelAUROC(num_labels=num_classes, average="macro")
         self.ap    = MultilabelAveragePrecision(num_labels=num_classes, average="macro")
 
@@ -94,18 +96,7 @@ class LitChestXray(pl.LightningModule):
     def training_step(self, batch, _):
         x, y = batch["image"], batch["target"].float()
         logits = self.model(x)
-        # loss = F.binary_cross_entropy_with_logits(
-        #     input=logits,
-        #     target= y, 
-        #     pos_weight=self.pos_weight
-        # )
-        loss = sigmoid_focal_loss(
-            inputs=logits,
-            targets= y, 
-            # pos_weight=self.pos_weight
-            reduction="mean"
-        )
-        # loss = self.loss_fn(logits, y)
+        loss = self._compute_loss(logits, y)
         bs = x.size(0)
         self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True, batch_size=bs, logger=True)
         return loss
@@ -114,18 +105,7 @@ class LitChestXray(pl.LightningModule):
     def validation_step(self, batch, _):
         x, y = batch["image"], batch["target"].float()
         logits = self.model(x)
-        # loss = F.binary_cross_entropy_with_logits(
-        #     input=logits,
-        #     target= y, 
-        #     pos_weight=self.pos_weight
-        # )
-        loss = sigmoid_focal_loss(
-            inputs=logits,
-            targets= y, 
-            # pos_weight=self.pos_weight
-            reduction="mean"
-        )
-        # loss = self.loss_fn(logits, y)
+        loss = self._compute_loss(logits, y)
         probs = logits.sigmoid()
         bs = x.size(0)
         self.auroc.update(probs, y.int()); self.ap.update(probs, y.int())
@@ -180,18 +160,7 @@ class LitChestXray(pl.LightningModule):
     def test_step(self, batch, _):
         x, y = batch["image"], batch["target"].float()
         logits = self.model(x)
-        loss = sigmoid_focal_loss(
-            inputs=logits,
-            targets= y, 
-            # pos_weight=self.pos_weight
-            reduction="mean"
-        )
-        # loss = F.binary_cross_entropy_with_logits(
-        #     input=logits,
-        #     target= y, 
-        #     pos_weight=self.pos_weight
-        # )
-        # loss = self.loss_fn(logits, y)
+        loss = self._compute_loss(logits, y)
         probs = logits.sigmoid()
         self.test_auroc.update(probs, y.int())
         self.test_ap.update(probs, y.int())
@@ -238,6 +207,22 @@ class LitChestXray(pl.LightningModule):
         self.test_ap.reset()
         self.test_probs_buf.clear()
         self.test_targs_buf.clear()
+
+
+    def _compute_loss(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """Compute loss based on configured loss function"""
+        if self.hparams.loss_func == "sigmoid_focal_loss":
+            return sigmoid_focal_loss(
+                inputs=logits,
+                targets=targets,
+                reduction="mean"
+            )
+        else:  # binary_cross_entropy_with_logits
+            return F.binary_cross_entropy_with_logits(
+                input=logits,
+                target=targets,
+                pos_weight=self.pos_weight if hasattr(self, "pos_weight") else None
+            )
 
 
 if __name__ == "__main__":
