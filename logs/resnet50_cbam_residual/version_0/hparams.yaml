@@ -1,0 +1,9 @@
+block: !!python/name:chestxray.models.cnn.ResidualBlock ''
+in_chans: 1
+loss_func: sigmoid_focal_loss
+lr: 0.0001
+num_classes: 14
+pos_weight: null
+thresholds_path: null
+total_epochs: 100
+weight_decay: 0.0001

@@ -10,7 +10,6 @@ from .dataset import ChestXray14Dataset
 
 def build_transforms(img_size: int, mean: float = 0.5, std: float = 0.25) -> Tuple[A.Compose, A.Compose]:
     train_tf = A.Compose([
-        # If images are already square & img_size, drop the next two:
         # A.LongestMaxSize(max_size=img_size),
         # A.PadIfNeeded(img_size, img_size, border_mode=0),
         A.HorizontalFlip(p=0.5),

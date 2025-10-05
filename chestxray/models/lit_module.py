@@ -26,6 +26,7 @@ class LitChestXray(pl.LightningModule):
             in_chans=1, 
             num_classes=14,
             block: ResidualBlock | BottleneckBlock = BottleneckBlock,
+            widths=(32, 64, 128, 256),
             lr=3e-4, 
             weight_decay=1e-4,
             loss_func: Literal["sigmoid_focal_loss", "binary_cross_entropy_with_logits"] = "binary_cross_entropy_with_logits", 
@@ -55,7 +56,8 @@ class LitChestXray(pl.LightningModule):
         self.model = CNN(
             num_classes=num_classes, 
             in_chans=in_chans,
-            block=block
+            block=block,
+            widths=widths
         )
         self.register_buffer(
             "thresholds", 

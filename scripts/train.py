@@ -1,7 +1,7 @@
 from lightning.pytorch.loggers import TensorBoardLogger
 import torch
 import json
-from chestxray.models import lit_module
+from chestxray.models import lit_module, cnn
 from chestxray.data.datamodule import ChestXray14DataModule
 from pathlib import Path
 import pytorch_lightning as pl
@@ -14,6 +14,26 @@ RESIZED = ROOT / "data" / "processed" / "resized" / "512"
 LABELS = ["Atelectasis","Cardiomegaly","Effusion","Infiltration","Mass",
           "Nodule","Pneumonia","Pneumothorax","Consolidation","Edema",
           "Emphysema","Fibrosis","Pleural_Thickening","Hernia"]
+
+def print_args(args, pos):
+    print("\n=== Training Configuration ===")
+    print(f"Data paths:")
+    print(f"  Train CSV: {args.train_csv}")
+    print(f"  Val CSV:   {args.val_csv}") 
+    print(f"  Test CSV:  {args.test_csv}")
+    print(f"  Cache dir: {args.cached_dir}")
+    print(f"\nTraining settings:")
+    print(f"  Batch size:     {args.batch_size}")
+    print(f"  Num workers:    {args.num_worker}")
+    print(f"  Total epochs:   {args.total_epochs}")
+    print(f"  Loss function:  {args.loss_func}")
+    print(f"\nLogging:")
+    print(f"  Log dir:        {args.log_dir}")
+    print(f"  Log name:       {args.log_name}")
+    print(f"  Checkpoint dir: {args.ckpt_dir}")
+    print(f"  Thresholds:     {args.thresholds_path}")
+    print(f"  pos_weight:     {pos}")
+    print("===========================\n")
 
 def main(args):
     torch.backends.cudnn.benchmark = True
@@ -30,7 +50,7 @@ def main(args):
     pos_weight_path = Path(args.pos_weight_path) if args.pos_weight_path \
         else (ROOT / "configs" / "pos_weight.json")
     pos = json.loads(pos_weight_path.read_text())["pos_weight"]
-    print("[pos_weight]:", pos)
+    
 
     dm = ChestXray14DataModule(
         train_csv=train_csv, 
@@ -57,11 +77,13 @@ def main(args):
         lr=1e-4, 
         weight_decay=1e-4, 
         total_epochs=args.total_epochs,
-        thresholds_path=args.thresholds_path
+        thresholds_path=args.thresholds_path,
+        loss_func=args.loss_func,
+        block = cnn.ResidualBlock,
     )
 
     ckpt_cb = ModelCheckpoint(
-        dirpath= str(ROOT / "logs" / "checkpoint_resnet50_100"),
+        dirpath= args.ckpt_dir,
         monitor="val_mAP", 
         mode="max", 
         save_top_k=1, 
@@ -71,6 +93,8 @@ def main(args):
     
     es_cb = EarlyStopping(monitor="val_mAP", mode="max", patience=10, verbose=True)
     lr_cb = LearningRateMonitor(logging_interval="epoch")
+
+    print_args(args, pos)
 
     trainer = pl.Trainer(
         max_epochs=args.epochs,
@@ -106,6 +130,7 @@ if __name__ == "__main__":
     p.add_argument("--num-worker", type=int, default=12)
 
     p.add_argument("--total-epochs", type=int, default=100)
+    p.add_argument("--loss-func", type=str, default="binary_cross_entropy_with_logits")
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--run_test", action="store_true", default=True)
     args = p.parse_args()

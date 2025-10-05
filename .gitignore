@@ -15,11 +15,6 @@ build/
 
 *.ipynb
 *.csv
-*.png
 
 data/raw/
 data/processed/
-
-logs/
-
-ssh/
