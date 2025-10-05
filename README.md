@@ -44,16 +44,17 @@ Despite experimenting with different ResNet-based architectures — namely **Res
 
 - **ResNet Bottleneck (widths = 32, 64, 128, 256)**  
   This variant adopts a bottleneck structure with reduced feature-map widths at each stage to minimize model size.
-
   In practice, however, this lightweight configuration required a **longer training duration** to reach the early stopping recall — approximately **24 hours** on an **RTX 4000 Ada** GPU — while achieving only comparable performance to the residual model.  
-
   This indicates **slower convergence** despite its smaller parameter count of approximately **6 million parameters** or **71.9 MB**.
+
+  *note* the threshold used can be viewd at [thresholds.jon](./configs/thresholds.json)
 
 - **ResNet Residual (widths = 64, 128, 256, 512)**  
   This version employs standard residual blocks with wider channels, providing higher representational capacity.
 
-
   It reached the same early stopping recall in approximately **11 hours** on the **RTX 4000 Ada**, demonstrating **faster convergence** and **similar overall performance**, though with a **larger model size** of approximately **24 million parameters** or **244 MB**.
+
+  *note* the threshold used can be viewd at [thresholds2.jon](./configs/thresholds_2.json)
 
 <div align="center">
 
