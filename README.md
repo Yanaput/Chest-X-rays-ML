@@ -66,6 +66,11 @@ Despite experimenting with different ResNet-based architectures — namely **Res
 
 </div>
 
+## Practical Use Case
+In real-world medical settings, a simpler and more practical approach could be to first perform binary classification — determining whether a chest X-ray contains any abnormal findings or not.
+Once abnormal images are detected, a specialized detection or localization model could then be applied to highlight regions of concern.
+This two-step workflow can effectively reduce doctors’ workload by filtering out normal cases and focusing human attention on potentially pathological ones.
+
 ### Implemented Components
 - [ResNet](https://arxiv.org/abs/1512.03385)
 
